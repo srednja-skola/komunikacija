@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recepcija – gost bez tople vode</title>
+<style>
+:root{
+  --bg:#f3f5f9; --card:#ffffff; --ink:#1b2433; --muted:#566175; --line:#d8dfea;
+  --accent:#1f5f8b; --accent-ink:#ffffff; --guest:#e9edf4; --me:#d9eefa;
+  --ok:#17693f; --ok-bg:#e1f4e8; --bad:#a8231b; --bad-bg:#fcebe9;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0e131b; --card:#161d28; --ink:#e8edf5; --muted:#a0abbd; --line:#2a3546;
+    --accent:#5ab0e6; --accent-ink:#06121c; --guest:#212b3a; --me:#173a52;
+    --ok:#6fdca1; --ok-bg:#12301f; --bad:#ff9a90; --bad-bg:#3a1916;
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+#app{max-width:760px; margin:0 auto; padding:0 1rem 3rem}
+header.top{padding:1.4rem 0 .4rem}
+header.top h1{margin:0; font-size:1.55rem; line-height:1.25}
+header.top p{margin:.3rem 0 0; color:var(--muted)}
+
+.card{background:var(--card); border:1px solid var(--line); border-radius:1rem; padding:1.2rem 1.3rem; margin-top:1rem}
+.card h2{margin:0 0 .5rem; font-size:1.1rem}
+.card ol{margin:.4rem 0 1rem; padding-left:1.3rem}
+.card li{margin:.25rem 0}
+.hint{color:var(--muted); font-size:.9rem}
+
+button.primary{
+  font:inherit; font-weight:600; cursor:pointer; border:0; border-radius:.8rem;
+  padding:.8rem 1.4rem; background:var(--accent); color:var(--accent-ink);
+}
+button.primary:hover{filter:brightness(1.08)}
+button.primary:focus-visible{outline:3px solid var(--accent); outline-offset:3px}
+
+/* progress */
+#progress{
+  position:sticky; top:0; z-index:5; background:var(--bg);
+  padding:.7rem 0 .6rem; border-bottom:1px solid var(--line);
+}
+#progress .row{display:flex; justify-content:space-between; font-size:.9rem; color:var(--muted); margin-bottom:.4rem}
+.track{height:.5rem; background:var(--line); border-radius:1rem; overflow:hidden}
+#bar{height:100%; width:0; background:var(--accent); transition:width .4s ease}
+
+/* chat */
+#chat{padding-top:.4rem}
+.scene{
+  margin:1rem 0; padding:.7rem 1rem; text-align:center; font-size:.92rem;
+  color:var(--muted); background:var(--card); border:1px dashed var(--line); border-radius:.8rem;
+}
+.msg{display:flex; gap:.6rem; margin:.9rem 0; align-items:flex-end; animation:pop .25s ease-out}
+.msg.me{flex-direction:row-reverse}
+.avatar{
+  flex:none; width:2.2rem; height:2.2rem; border-radius:50%; display:grid; place-items:center;
+  font-weight:700; font-size:.85rem; background:var(--line); color:var(--ink);
+}
+.msg.me .avatar{background:var(--accent); color:var(--accent-ink)}
+.col{max-width:min(86%,36rem)}
+.msg.me .col{display:flex; flex-direction:column; align-items:flex-end}
+.who{font-size:.75rem; color:var(--muted); margin:0 .3rem .15rem}
+.bubble{padding:.7rem .95rem; border-radius:1rem; line-height:1.5}
+.guest .bubble{background:var(--guest); border-bottom-left-radius:.3rem}
+.me .bubble{background:var(--me); border-bottom-right-radius:.3rem}
+.tags{margin-top:.4rem; display:flex; flex-wrap:wrap; gap:.3rem; align-items:center; justify-content:flex-end}
+.tag-label{font-size:.78rem; color:var(--ok); font-weight:600}
+.pill{font-size:.78rem; padding:.1rem .55rem; border-radius:1rem; background:var(--ok-bg); color:var(--ok); border:1px solid var(--ok)}
+.typing{display:inline-flex; gap:.25rem; padding:.2rem 0}
+.typing span{width:.5rem; height:.5rem; border-radius:50%; background:var(--muted); animation:blink 1s infinite}
+.typing span:nth-child(2){animation-delay:.15s}
+.typing span:nth-child(3){animation-delay:.3s}
+
+/* choices */
+#choices{margin-top:1.2rem; padding:1rem 1rem 1.1rem; border:1px solid var(--line); border-radius:1rem; background:var(--card)}
+#choices h2{margin:0 0 .2rem; font-size:1rem}
+#choices h2:focus{outline:none}
+#choices .sub{margin:0 0 .4rem; font-size:.88rem; color:var(--muted)}
+.choice{
+  display:flex; gap:.75rem; width:100%; text-align:left; padding:.8rem .9rem; margin:.55rem 0 0;
+  border:2px solid var(--line); border-radius:.8rem; background:transparent; color:inherit;
+  font:inherit; line-height:1.45; cursor:pointer;
+}
+.choice:hover{border-color:var(--accent)}
+.choice:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+.letter{
+  flex:none; width:1.7rem; height:1.7rem; border-radius:50%; display:grid; place-items:center;
+  font-size:.82rem; font-weight:700; background:var(--line); color:var(--ink); margin-top:.05rem;
+}
+.txt{display:block; flex:1}
+.why{display:block; margin-top:.5rem; font-size:.9rem; color:var(--bad); font-weight:500}
+.choice.wrong{border-color:var(--bad); background:var(--bad-bg); cursor:default; animation:shake .3s}
+.choice.wrong:hover{border-color:var(--bad)}
+.choice.wrong .letter{background:var(--bad); color:var(--card)}
+.choice.right{border-color:var(--ok); background:var(--ok-bg); cursor:default}
+.choice.right .letter{background:var(--ok); color:var(--card)}
+.choice.locked{cursor:default; opacity:.55}
+.choice.locked:hover{border-color:var(--line)}
+
+/* result */
+#result h2{margin:0 0 .3rem; font-size:1.3rem}
+#result h2:focus{outline:none}
+.score{font-size:2rem; font-weight:700; margin:.2rem 0; color:var(--accent)}
+.res{list-style:none; margin:.8rem 0 1.1rem; padding:0}
+.res li{display:flex; gap:.6rem; padding:.45rem 0; border-top:1px solid var(--line)}
+.res .ico{flex:none; width:1.3rem; font-weight:700}
+.res .good{color:var(--ok)}
+.res .meh{color:var(--bad)}
+.res small{color:var(--muted)}
+
+footer{margin-top:2rem; text-align:center; font-size:.82rem; color:var(--muted)}
+
+@keyframes pop{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@media (prefers-reduced-motion: reduce){
+  *{animation:none!important; transition:none!important}
+}
+</style>
+</head>
+<body>
+<main id="app">
+  <header class="top">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </header>
+
+  <noscript><div class="card">Za rad aplikacije potrebno je uključiti JavaScript u pregledniku.</div></noscript>
+
+  <section id="start" class="card">
+    <h2>Kako se igra</h2>
+    <p id="intro"></p>
+    <ol>
+      <li>Pročitaj što kaže gost.</li>
+      <li>Među tri ponuđena odgovora odaberi onaj koji bi rekao dobar recepcionar. Samo je jedan točan.</li>
+      <li>Kod pogrešnog odgovora dobiješ objašnjenje i probaš ponovno. Kod točnog gost odgovara i ponude se nova tri odgovora.</li>
+    </ol>
+    <p class="hint">Odgovore možeš birati i tipkama 1, 2 i 3.</p>
+    <button type="button" class="primary" id="startBtn">Započni razgovor</button>
+  </section>
+
+  <section id="game" hidden>
+    <div id="progress">
+      <div class="row"><span id="stepLabel"></span><span id="errCount"></span></div>
+      <div class="track"><div id="bar"></div></div>
+    </div>
+    <div id="chat" role="log" aria-live="polite" aria-label="Razgovor"></div>
+    <div id="choices" hidden></div>
+    <div id="result" class="card" hidden></div>
+  </section>
+
+  <footer>Radi bez interneta. Datoteku je dovoljno otvoriti u pregledniku.</footer>
+</main>
+
+<!-- ===========================================================
+     PODACI O RAZGOVORU – ovdje se mogu uređivati tekstovi.
+     Svaki korak: options (3 odgovora recepcionara, točno jedan
+     ima correct:true), guest (odgovor gosta nakon točnog odgovora),
+     technique (što je dobro napravljeno), label (za završni pregled).
+     =========================================================== -->
+<script>
+const SCENARIO = {
+  title: "Recepcija – gost bez tople vode",
+  subtitle: "Igra uloga: ti si recepcionar",
+  intro: "Ti si recepcionar u hotelu. Jutro je, 7:45. Na recepciju dolazi gost, gospodin Horvat iz sobe 214, i žali se da nema tople vode. U svakom koraku odaberi odgovor koji pokazuje aktivno slušanje i vodi prema rješenju.",
+  scene: "Hotel, 7:45 ujutro. Gospodin Horvat iz sobe 214 prilazi recepciji. Ti si recepcionar.",
+  meName: "Recepcionar",
+  guestName: "Gost",
+  steps: [
+    {
+      label: "Pozdrav",
+      options: [
+        { text: "Dobar dan, dobrodošli! Kako Vam mogu pomoći?", correct: true },
+        { text: "Da? Recite što trebate, imam puno posla.",
+          why: "Hladan i nestrpljiv ton. Gost treba osjetiti dobrodošlicu i da je recepcionar na raspolaganju." },
+        { text: "Dobar dan. Imate li rezervaciju? Osobnu iskaznicu, molim.",
+          why: "Gost još nije ni rekao što želi. Prvo dolazi pozdrav i otvoreno pitanje, a ne ispitivanje." }
+      ],
+      technique: ["kontakt očima i osmijeh", "otvoreno pitanje"],
+      guest: "Dobar dan. Imam ozbiljan problem. U sobi 214 već dva dana nema tople vode. Jutros sam se morao tuširati hladnom vodom, a to je neprihvatljivo za hotel ove kategorije!"
+    },
+    {
+      label: "Žaljenje i parafraziranje",
+      options: [
+        { text: "Žao mi je što ste doživjeli takvu neugodu, gospodine Horvat. Dopustite da provjerim jesam li Vas dobro razumio: u sobi 214 nema tople vode već dva dana, a jutros ste se morali tuširati hladnom vodom. Je li tako?", correct: true },
+        { text: "Hm, to nam se još nije dogodilo ni u jednoj sobi na tom katu. Jeste li sigurni da ste dobro otvorili slavinu na toplu vodu? Možda ste je samo krivo okrenuli. Pokušajte još jednom, pa ćemo vidjeti ima li uopće problema.",
+          why: "Gost je neizravno optužen da je sam kriv. Time se ne pokazuje slušanje, nego nepovjerenje." },
+        { text: "Smirite se, molim Vas. To je sigurno samo privremeni kvar zbog jutarnje potrošnje i uskoro će sve proraditi sama od sebe. Nema razloga za uzbuđenje, to se ponekad događa i u najboljim hotelima, vjerujte mi.",
+          why: "„Smirite se“ pojačava ljutnju, a nejasno obećanje ne pokazuje da je gost saslušan. Bolje je parafrazirati ono što je rekao." }
+      ],
+      technique: ["izražavanje žaljenja", "obraćanje imenom", "parafraziranje"],
+      guest: "Točno. A jučer navečer sam već zvao recepciju i rekli su da će netko doći. Nitko se nije pojavio!"
+    },
+    {
+      label: "Empatija i pojašnjavajuće pitanje",
+      options: [
+        { text: "Razumijem da ste ljuti. Prijavili ste problem, očekivali ste da će biti riješen, a to se nije dogodilo. Ispričavam se u ime hotela, to nije standard kakav želimo pružiti. Mogu li Vas još nešto pitati da točno shvatim problem? Je li voda hladna samo u tuši ili i na umivaoniku?", correct: true },
+        { text: "Nitko nam nije javio kvar, u knjizi prijava nema nikakvog zapisa za sobu 214. Možda ste zvali pogrešan broj ili Vas netko nije dobro razumio na telefonu. Mi uvijek zapišemo svaku prijavu, pa mi je zaista čudno da ništa ne piše o tome.",
+          why: "Opravdavanje i prebacivanje krivnje. Gost želi čuti isprku i vidjeti da se problem uzima ozbiljno." },
+        { text: "To nije moja smjena pa ne znam tko je sinoć primio poziv. Za kvarove je nadležna tehnička služba, a ne recepcija, pa je najbolje da njih nazovete izravno. Broj im mogu dati, ali Vam s ovim ne mogu više pomoći, žao mi je.",
+          why: "„To nije moja odgovornost“ ostavlja gosta samog s problemom. Recepcionar preuzima problem u ime hotela." }
+      ],
+      technique: ["empatija", "preuzimanje odgovornosti bez traženja krivca", "pojašnjavajuće pitanje"],
+      guest: "Svugdje je hladna. Pustio sam je desetak minuta i ništa."
+    },
+    {
+      label: "Sažimanje i konkretno rješenje",
+      options: [
+        { text: "Hvala, ta je informacija važna tehničkoj službi. Dakle, bez tople vode je cijela soba, ne samo tuš, i to od jučer. Evo što ću učiniti odmah: nazvat ću voditelja održavanja i netko će biti u Vašoj sobi u roku od 15 minuta. Ako kvar ne bude otklonjen do 8:30, preselit ćemo Vas u sobu 305 s toplom vodom. Do tada se možete besplatno istuširati u wellness centru, a kavu Vam šaljemo u sobu na račun hotela.", correct: true },
+        { text: "Hvala. Pokušat ćemo nešto napraviti i javit ćemo Vam se čim saznamo više. Možda će se riješiti danas, a možda tek sutra, ovisi o tehničarima i o tome koliko imaju posla. Nažalost, ne mogu Vam reći ništa preciznije jer kvarovi na grijanju vode znaju potrajati. Ako želite, ostavite broj telefona pa ćemo Vas nazvati kad nešto doznamo, a do tada Vas molim za malo strpljenja.",
+          why: "Neodređeno, bez roka i bez konkretnog koraka. Gost treba znati što će se točno dogoditi i kada." },
+        { text: "Hvala. Savjetujem Vam da još malo pričekate jer topla voda često sama proradi nakon nekoliko sati, osobito kad se smanji potrošnja u hotelu. Ako ne proradi do podneva, slobodno nam se ponovno javite na recepciju ili nazovite tehničku službu, oni će Vam sigurno moći nešto reći. U međuvremenu se možete istuširati nakon doručka, kad bude manje gostiju.",
+          why: "Cijeli teret ostaje na gostu, a to je isti problem zbog kojeg se već žali. Recepcionar sam mora poduzeti korake." }
+      ],
+      technique: ["sažimanje", "konkretno rješenje s rokovima", "više opcija"],
+      guest: "Hm, a danas u 10 imam sastanak. Ne mogu čekati do podne."
+    },
+    {
+      label: "Prepoznavanje gostove potrebe",
+      options: [
+        { text: "Razumijem, zato smo postavili rok od 8:30, da stignete na sastanak spremni. Ako želite, već sada Vam mogu pripremiti sobu 305, pa se ne morate oslanjati na popravak. Što Vam više odgovara?", correct: true },
+        { text: "Do podneva će sigurno sve biti gotovo, tehničari su vrlo brzi i ovakve kvarove obično riješe za nekoliko sati. Nema potrebe da se selite, samo pričekajte u sobi i bit će sve u redu, a sastanak možete i pomaknuti.",
+          why: "Ignorira gostov sastanak i ništa ne jamči. Gost je rekao što mu je važno pa rješenje to mora uvažiti." },
+        { text: "Preseljenje je moguće tek nakon odjave i nove prijave, a to može dugo trajati i zahtijeva dodatne papire. Bolje je da pričekate tehničara nego da se mučite sa selidbom i nepotrebno gubite vrijeme ujutro.",
+          why: "Nema inicijative i odbija ponuđeno rješenje. Gostu treba ponuditi izbor, a ne razloge zašto nešto ne ide." }
+      ],
+      technique: ["prepoznavanje gostove potrebe", "prepuštanje izbora gostu"],
+      guest: "Pripremite onda 305, ne želim riskirati."
+    },
+    {
+      label: "Potvrda i gesta dobre volje",
+      options: [
+        { text: "Dogovoreno. Odmah dajem nalog domaćici i nosaču. Za pola sata kartica za sobu 305 bit će spremna, a ja ću Vas osobno nazvati čim sve bude gotovo. Kao ispriku za neugodu, hotel Vam nudi besplatan doručak za danas. Može li još nešto?", correct: true },
+        { text: "U redu. Kartica će biti spremna kad bude spremna, a prtljagu možete sami prenijeti kad Vam bude zgodno. Doručak je kao i inače od 7 do 10 sati u glavnom restoranu, a ako imate još pitanja, javite se.",
+          why: "Nema roka, nema pomoći s prtljagom ni geste dobre volje. Gost ostaje s dojmom da hotelu nije stalo." },
+        { text: "Dogovoreno. Spremit ćemo sobu 305, a za ispriku Vam nudim besplatan doručak, besplatno noćenje sljedeći put i popust na sve usluge wellnessa. Samo da više nema pritužbi na hotel, jer nam je to jako važno zbog ocjena.",
+          why: "Preveliko obećanje koje recepcionar nema ovlasti dati. Gesta dobre volje mora biti razmjerna i unutar pravila hotela." }
+      ],
+      technique: ["potvrda dogovora", "obećanje povratnog poziva", "gesta dobre volje"],
+      guest: "Ne, to je sve. Hvala na brzoj reakciji."
+    },
+    {
+      label: "Završetak razgovora",
+      options: [
+        { text: "Hvala Vama što ste nam javili problem. Još jednom ispričavam se i želim Vam uspješan sastanak!", correct: true },
+        { text: "Nema na čemu. Drugi put problem prijavite odmah, a ne tek drugi dan, pa ćemo ga lakše riješiti.",
+          why: "Ponovno prebacuje krivnju na gosta, i to na samom kraju razgovora. Završetak treba biti pozitivan." },
+        { text: "U redu, doviđenja. Ako se pojavi još nekakav problem, nemojte oklijevati da nam se javite na recepciju.",
+          why: "Hladan završetak bez zahvale i isprike. Gostu treba zahvaliti što je javio problem i poželjeti mu dobar dan." }
+      ],
+      technique: ["pozitivan završetak"],
+      guest: null
+    },
+    {
+      label: "Naknadni poziv (follow-up)",
+      scene: "Prošlo je 30 minuta. Soba 305 je spremna, a ti zoveš gosta u sobu.",
+      options: [
+        { text: "Gospodine Horvat, soba 305 je spremna, a prtljaga je već prenesena. Je li sve u redu s toplom vodom?", correct: true },
+        { text: "Gospodine Horvat, soba 305 je spremna. Karticu možete preuzeti na recepciji, a dalje je sve na Vama.",
+          why: "Gost dobiva samo suhu informaciju. Pravi povratni poziv provjerava je li gost zadovoljan rješenjem." },
+        { text: "Gospodine Horvat, zovem Vas da potvrdim da je kvar u sobi 214 prijavljen. Tehničari su na redu i javit ćemo Vam se.",
+          why: "Gost je već preseljen pa ovaj poziv ne donosi ništa novo. Dogovor je bio da ga nazovete kad je nova soba spremna." }
+      ],
+      technique: ["povratni poziv (follow-up)", "provjera zadovoljstva gosta"],
+      guest: "Da, sve je u redu, topla voda radi. Hvala Vam na trudu."
+    }
+  ]
+};
+</script>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s) { return document.querySelector(s); };
+  var startEl = $("#start"), gameEl = $("#game"), chatEl = $("#chat"),
+      choicesEl = $("#choices"), resultEl = $("#result"), barEl = $("#bar"),
+      stepEl = $("#stepLabel"), errEl = $("#errCount");
+  var reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var steps = SCENARIO.steps, n = steps.length;
+  var idx = 0, attempts = [], mistakes = 0, busy = false;
+
+  $("#title").textContent = SCENARIO.title;
+  $("#subtitle").textContent = SCENARIO.subtitle;
+  $("#intro").textContent = SCENARIO.intro;
+  document.title = SCENARIO.title;
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function wait(ms) { return reduce ? 0 : ms; }
+  function reveal(node) {
+    node.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" });
+  }
+  function shuffle(a) {
+    var r = a.slice(), i, j, t;
+    for (i = r.length - 1; i > 0; i--) {
+      j = Math.floor(Math.random() * (i + 1));
+      t = r[i]; r[i] = r[j]; r[j] = t;
+    }
+    return r;
+  }
+
+  function addScene(text) {
+    var s = el("div", "scene", text);
+    chatEl.appendChild(s);
+    return s;
+  }
+
+  function addMessage(who, text, tags) {
+    var row = el("div", "msg " + who);
+    row.appendChild(el("div", "avatar", who === "me" ? "R" : "G"));
+    var col = el("div", "col");
+    col.appendChild(el("div", "who", who === "me" ? SCENARIO.meName : SCENARIO.guestName));
+    col.appendChild(el("div", "bubble", text));
+    if (tags && tags.length) {
+      var t = el("div", "tags");
+      t.appendChild(el("span", "tag-label", "✓ Dobro:"));
+      tags.forEach(function (x) { t.appendChild(el("span", "pill", x)); });
+      col.appendChild(t);
+    }
+    row.appendChild(col);
+    chatEl.appendChild(row);
+    reveal(row);
+    return row;
+  }
+
+  function addTyping() {
+    var row = el("div", "msg guest");
+    row.appendChild(el("div", "avatar", "G"));
+    var col = el("div", "col");
+    var b = el("div", "bubble");
+    var d = el("span", "typing");
+    d.setAttribute("aria-label", "Gost odgovara");
+    d.appendChild(el("span")); d.appendChild(el("span")); d.appendChild(el("span"));
+    b.appendChild(d); col.appendChild(b); row.appendChild(col);
+    chatEl.appendChild(row);
+    reveal(row);
+    return row;
+  }
+
+  function updateProgress() {
+    stepEl.textContent = "Korak " + Math.min(idx + 1, n) + " od " + n;
+    errEl.textContent = "Pogreške: " + mistakes;
+    barEl.style.width = Math.round((idx / n) * 100) + "%";
+  }
+
+  function renderStep() {
+    var step = steps[idx];
+    busy = false;
+    attempts[idx] = 0;
+    updateProgress();
+    if (step.scene) addScene(step.scene);
+
+    choicesEl.innerHTML = "";
+    choicesEl.hidden = false;
+    var h = el("h2", null, "Što kažeš kao recepcionar?");
+    h.tabIndex = -1;
+    choicesEl.appendChild(h);
+    choicesEl.appendChild(el("p", "sub", "Odaberi jedan od tri odgovora."));
+
+    shuffle(step.options).forEach(function (o, k) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "choice";
+      b.setAttribute("aria-keyshortcuts", String(k + 1));
+      b.appendChild(el("span", "letter", String.fromCharCode(65 + k)));
+      b.appendChild(el("span", "txt", o.text));
+      b.addEventListener("click", function () { pick(o, b, step); });
+      choicesEl.appendChild(b);
+    });
+    reveal(choicesEl);
+    h.focus({ preventScroll: true });
+  }
+
+  function pick(o, btn, step) {
+    if (busy || btn.getAttribute("aria-disabled") === "true") return;
+
+    if (!o.correct) {
+      attempts[idx]++;
+      mistakes++;
+      updateProgress();
+      btn.classList.add("wrong");
+      btn.setAttribute("aria-disabled", "true");
+      btn.querySelector(".txt").appendChild(el("span", "why", "✗ Nije najbolje: " + o.why));
+      reveal(btn);
+      return;
+    }
+
+    busy = true;
+    btn.classList.add("right");
+    btn.setAttribute("aria-disabled", "true");
+    Array.prototype.forEach.call(choicesEl.querySelectorAll(".choice"), function (c) {
+      if (c !== btn) { c.setAttribute("aria-disabled", "true"); if (!c.classList.contains("wrong")) c.classList.add("locked"); }
+    });
+
+    setTimeout(function () {
+      choicesEl.hidden = true;
+      addMessage("me", o.text, step.technique);
+      afterCorrect(step);
+    }, wait(700));
+  }
+
+  function afterCorrect(step) {
+    function next() {
+      idx++;
+      if (idx < n) renderStep(); else finish();
+    }
+    if (step.guest) {
+      var t = addTyping();
+      setTimeout(function () {
+        t.remove();
+        addMessage("guest", step.guest);
+        setTimeout(next, wait(600));
+      }, wait(1000));
+    } else {
+      setTimeout(next, wait(700));
+    }
+  }
+
+  function finish() {
+    idx = n;
+    updateProgress();
+    stepEl.textContent = "Razgovor završen";
+    barEl.style.width = "100%";
+    choicesEl.hidden = true;
+
+    var first = attempts.filter(function (a) { return a === 0; }).length;
+    var ratio = first / n, msg;
+    if (first === n) msg = "Izvrsno! Svi su odgovori bili točni iz prvog pokušaja.";
+    else if (ratio >= 0.75) msg = "Vrlo dobro! Većina odgovora bila je točna iz prvog pokušaja.";
+    else if (ratio >= 0.5) msg = "Dobro, ali vrijedi ponoviti. Obrati pažnju na objašnjenja uz pogrešne odgovore.";
+    else msg = "Pokušaj ponovno. Obrati pažnju na parafraziranje, empatiju i konkretna rješenja s rokovima.";
+
+    resultEl.innerHTML = "";
+    var h = el("h2", null, "Kraj razgovora");
+    h.tabIndex = -1;
+    resultEl.appendChild(h);
+    resultEl.appendChild(el("div", "score", first + " / " + n + " iz prvog pokušaja"));
+    resultEl.appendChild(el("p", null, msg));
+
+    var ul = el("ul", "res");
+    steps.forEach(function (s, i) {
+      var li = el("li");
+      var ok = attempts[i] === 0;
+      li.appendChild(el("span", "ico " + (ok ? "good" : "meh"), ok ? "✓" : "✗"));
+      var d = el("div");
+      d.appendChild(document.createTextNode((i + 1) + ". " + s.label + " "));
+      var sm = el("small", null, ok ? "(iz prvog pokušaja)" : "(" + attempts[i] + (attempts[i] === 1 ? " pogreška)" : " pogreške)"));
+      d.appendChild(sm);
+      li.appendChild(d);
+      ul.appendChild(li);
+    });
+    resultEl.appendChild(ul);
+
+    var again = el("button", "primary", "Igraj ponovno");
+    again.type = "button";
+    again.addEventListener("click", start);
+    resultEl.appendChild(again);
+
+    resultEl.hidden = false;
+    reveal(resultEl);
+    h.focus({ preventScroll: true });
+  }
+
+  function start() {
+    idx = 0; attempts = []; mistakes = 0; busy = false;
+    chatEl.innerHTML = "";
+    resultEl.hidden = true;
+    startEl.hidden = true;
+    gameEl.hidden = false;
+    window.scrollTo(0, 0);
+    addScene(SCENARIO.scene);
+    renderStep();
+  }
+
+  $("#startBtn").addEventListener("click", start);
+
+  document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (gameEl.hidden || choicesEl.hidden || busy) return;
+    var k = parseInt(e.key, 10);
+    if (k >= 1 && k <= 3) {
+      var btns = choicesEl.querySelectorAll(".choice");
+      if (btns[k - 1]) btns[k - 1].click();
+    }
+  });
+})();
+</script>
+</body>
+</html>

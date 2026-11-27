@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Restoran – igra uloga</title>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f7fafc; --card:#ffffff; --ink:#223040; --muted:#5d6c7f; --line:#e1e8ef;
+  --accent:#25758f; --accent-ink:#ffffff; --guest:#eff4f8; --me:#e3f5f1;
+  --ok:#1d7a4c; --ok-bg:#e8f7ee; --bad:#b42318; --bad-bg:#fff0ee;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:linear-gradient(#eef7fb, var(--bg) 260px) no-repeat, var(--bg); color:var(--ink);
+  font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+#app{max-width:760px; margin:0 auto; padding:0 1rem 3rem}
+header.top{padding:1.4rem 0 .4rem}
+header.top h1{margin:0; font-size:1.55rem; line-height:1.25}
+header.top p{margin:.3rem 0 0; color:var(--muted)}
+
+.card{background:var(--card); border:1px solid var(--line); border-radius:1rem; padding:1.2rem 1.3rem; margin-top:1rem; box-shadow:0 1px 3px rgba(34,48,64,.05)}
+.card h2{margin:0 0 .5rem; font-size:1.1rem}
+.card ol{margin:.4rem 0 1rem; padding-left:1.3rem}
+.card li{margin:.25rem 0}
+.hint{color:var(--muted); font-size:.9rem}
+
+button.primary{
+  font:inherit; font-weight:600; cursor:pointer; border:0; border-radius:.8rem;
+  padding:.8rem 1.4rem; background:var(--accent); color:var(--accent-ink);
+}
+button.primary:hover{filter:brightness(1.08)}
+button.primary:focus-visible{outline:3px solid var(--accent); outline-offset:3px}
+
+/* progress */
+#progress{
+  position:sticky; top:0; z-index:5; background:var(--bg);
+  padding:.7rem 0 .6rem; border-bottom:1px solid var(--line);
+}
+#progress .row{display:flex; justify-content:space-between; font-size:.9rem; color:var(--muted); margin-bottom:.4rem}
+.track{height:.5rem; background:var(--line); border-radius:1rem; overflow:hidden}
+#bar{height:100%; width:0; background:var(--accent); transition:width .4s ease}
+
+/* chat */
+#chat{padding-top:.4rem}
+.scene{
+  margin:1rem 0; padding:.7rem 1rem; text-align:center; font-size:.92rem;
+  color:var(--muted); background:var(--card); border:1px dashed #cfdbe6; border-radius:.8rem;
+}
+.msg{display:flex; gap:.6rem; margin:.9rem 0; align-items:flex-end; animation:pop .25s ease-out}
+.msg.me{flex-direction:row-reverse}
+.avatar{
+  flex:none; width:2.2rem; height:2.2rem; border-radius:50%; display:grid; place-items:center;
+  font-weight:700; font-size:.85rem; background:#dde6ee; color:var(--ink);
+}
+.msg.me .avatar{background:var(--accent); color:var(--accent-ink)}
+.col{max-width:min(86%,36rem)}
+.msg.me .col{display:flex; flex-direction:column; align-items:flex-end}
+.who{font-size:.75rem; color:var(--muted); margin:0 .3rem .15rem}
+.bubble{padding:.7rem .95rem; border-radius:1rem; line-height:1.5}
+.guest .bubble{background:var(--guest); border-bottom-left-radius:.3rem}
+.me .bubble{background:var(--me); border-bottom-right-radius:.3rem}
+.tags{margin-top:.4rem; display:flex; flex-wrap:wrap; gap:.3rem; align-items:center; justify-content:flex-end}
+.tag-label{font-size:.78rem; color:var(--ok); font-weight:600}
+.pill{font-size:.78rem; padding:.1rem .55rem; border-radius:1rem; background:var(--ok-bg); color:var(--ok); border:1px solid #9fd5b6}
+.typing{display:inline-flex; gap:.25rem; padding:.2rem 0}
+.typing span{width:.5rem; height:.5rem; border-radius:50%; background:var(--muted); animation:blink 1s infinite}
+.typing span:nth-child(2){animation-delay:.15s}
+.typing span:nth-child(3){animation-delay:.3s}
+
+/* choices */
+#choices{margin-top:1.2rem; padding:1rem 1rem 1.1rem; border:1px solid var(--line); border-radius:1rem; background:var(--card); box-shadow:0 1px 3px rgba(34,48,64,.05)}
+#choices h2{margin:0 0 .2rem; font-size:1rem}
+#choices h2:focus{outline:none}
+#choices .sub{margin:0 0 .4rem; font-size:.88rem; color:var(--muted)}
+.choice{
+  display:flex; gap:.75rem; width:100%; text-align:left; padding:.8rem .9rem; margin:.55rem 0 0;
+  border:2px solid var(--line); border-radius:.8rem; background:transparent; color:inherit;
+  font:inherit; line-height:1.45; cursor:pointer;
+}
+.choice:hover{border-color:var(--accent); background:#f4fafc}
+.choice:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+.letter{
+  flex:none; width:1.7rem; height:1.7rem; border-radius:50%; display:grid; place-items:center;
+  font-size:.82rem; font-weight:700; background:#e3ebf2; color:var(--ink); margin-top:.05rem;
+}
+.txt{display:block; flex:1}
+.why{display:block; margin-top:.5rem; font-size:.9rem; color:var(--bad); font-weight:500}
+.choice.wrong{border-color:#e8a29b; background:var(--bad-bg); cursor:default; animation:shake .3s}
+.choice.wrong:hover{border-color:#e8a29b; background:var(--bad-bg)}
+.choice.wrong .letter{background:var(--bad); color:#fff}
+.choice.right{border-color:#7cc79b; background:var(--ok-bg); cursor:default}
+.choice.right:hover{border-color:#7cc79b; background:var(--ok-bg)}
+.choice.right .letter{background:var(--ok); color:#fff}
+.choice.locked{cursor:default; opacity:.55}
+.choice.locked:hover{border-color:var(--line); background:transparent}
+
+/* result */
+#result h2{margin:0 0 .3rem; font-size:1.3rem}
+#result h2:focus{outline:none}
+.score{font-size:2rem; font-weight:700; margin:.2rem 0; color:var(--accent)}
+.res{list-style:none; margin:.8rem 0 1.1rem; padding:0}
+.res li{display:flex; gap:.6rem; padding:.45rem 0; border-top:1px solid var(--line)}
+.res .ico{flex:none; width:1.3rem; font-weight:700}
+.res .good{color:var(--ok)}
+.res .meh{color:var(--bad)}
+.res small{color:var(--muted)}
+
+footer{margin-top:2rem; text-align:center; font-size:.82rem; color:var(--muted)}
+
+@keyframes pop{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@media (prefers-reduced-motion: reduce){
+  *{animation:none!important; transition:none!important}
+}
+</style>
+</head>
+<body>
+<main id="app">
+  <header class="top">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </header>
+
+  <noscript><div class="card">Za rad aplikacije potrebno je uključiti JavaScript u pregledniku.</div></noscript>
+
+  <section id="start" class="card">
+    <h2>Kako se igra</h2>
+    <p id="intro"></p>
+    <ol>
+      <li>Pročitaj što kaže gost.</li>
+      <li>Među tri ponuđena odgovora odaberi onaj koji bi rekao dobar konobar. Samo je jedan točan.</li>
+      <li>Kod pogrešnog odgovora dobiješ objašnjenje i probaš ponovno. Kod točnog gost odgovara i ponude se nova tri odgovora.</li>
+    </ol>
+    <p class="hint">Odgovore možeš birati i tipkama 1, 2 i 3.</p>
+    <button type="button" class="primary" id="startBtn">Započni razgovor</button>
+  </section>
+
+  <section id="game" hidden>
+    <div id="progress">
+      <div class="row"><span id="stepLabel"></span><span id="errCount"></span></div>
+      <div class="track"><div id="bar"></div></div>
+    </div>
+    <div id="chat" role="log" aria-live="polite" aria-label="Razgovor"></div>
+    <div id="choices" hidden></div>
+    <div id="result" class="card" hidden></div>
+  </section>
+
+  <footer>Radi bez interneta. Datoteku je dovoljno otvoriti u pregledniku.</footer>
+</main>
+
+<!-- ===========================================================
+     PODACI O RAZGOVORU – ovdje se mogu uređivati tekstovi.
+     Svaki korak: options (3 odgovora konobara, točno jedan
+     ima correct:true), guest (odgovor gosta nakon točnog odgovora),
+     technique (što je dobro napravljeno), label (za završni pregled).
+     =========================================================== -->
+<script>
+const SCENARIO = {
+  title: "Restoran – igra uloga: rasprodano jelo",
+  subtitle: "Igra uloga: ti si konobar",
+  intro: "Ti si konobar u restoranu Marina. Subota je, 13:15. Gospodin Marko Tomić i supruga sjedaju za stol broj 7. Gost je došao zbog brancina na žaru, ali je ta riba danas rasprodana. U svakom koraku odaberi odgovor koji je ljubazan, iskren i vodi prema rješenju: reci gostu što se dogodilo, objasni bez opravdavanja i ponudi alternativu.",
+  scene: "Restoran Marina, subota, 13:15. Gospodin Tomić i supruga sjedaju za stol broj 7. Ti si konobar Luka Babić.",
+  meName: "Konobar",
+  guestName: "Gost",
+  steps: [
+    {
+      label: "Pozdrav",
+      options: [
+        { text: "Dobar dan, dobrodošli u restoran Marina! Jeste li spremni naručiti ili Vam treba još malo vremena?", correct: true },
+        { text: "Dobar dan. Izvolite sjesti, a odmah ćete reći što želite jer nam je u kuhinji velika gužva.",
+          why: "Gosta se žuri i odmah mu se stavlja pritisak. Treba ga ljubazno dočekati i pitati je li spreman naručiti ili treba još vremena." },
+        { text: "Dobro došli. Evo jelovnika. Pozovite me kad budete htjeli naručiti, ja sam inače jako zauzet.",
+          why: "Nezainteresiran ton i gost ima dojam da smeta. Konobar treba biti na raspolaganju i pozdraviti toplo." }
+      ],
+      technique: ["ljubazan pozdrav", "ne žuri gosta"],
+      guest: "Dobar dan. Spremni smo. Za mene brancin na žaru, a supruga će njoke sa sirom i tikvicama."
+    },
+    {
+      label: "Žaljenje i jasna informacija",
+      options: [
+        { text: "Hvala. Gospođi njoki sa sirom i tikvicama, odlična odluka. Gospodine Tomiću, moram Vas nažalost obavijestiti da je brancin na žaru danas rasprodan. Iskreno mi je žao, znam da ste ga željeli.", correct: true },
+        { text: "Hvala. Nažalost, brancina nema. Kuhinja nije naručila dovoljno ribe, pa se tu ne može ništa. Morat ćete naručiti nešto drugo s jelovnika, ja tu stvarno ne mogu pomoći niti išta promijeniti.",
+          why: "Okrivljuje se kuhinja, a gostu se ne nudi rješenje. Treba izraziti žaljenje i jasno reći da je jelo rasprodano, bez traženja krivca." },
+        { text: "Hvala. Njoke ću odmah zabilježiti. A brancin... pa, vidjet ćemo, možda je još ostalo nešto u kuhinji, ali ne obećavam ništa. Pričekajte malo dok provjerim, a onda ćemo vidjeti što se može.",
+          why: "Neodređeno i bez jasne informacije. Gost odmah treba čuti da je jelo rasprodano, umjesto da se zavlači i čeka." }
+      ],
+      technique: ["izražavanje žaljenja", "jasna i izravna informacija", "bez okolišanja"],
+      guest: "Baš šteta, zbog njega sam i došao. Zašto ga nema?"
+    },
+    {
+      label: "Objašnjenje bez opravdavanja",
+      options: [
+        { text: "Razumijem Vaše razočaranje. Svježu ribu dobivamo ujutro i ne koristimo zamrznutu, pa smo brancina već prodali do ranog poslijepodneva. Ovako možemo jamčiti da je sve što poslužujemo doista svježe.", correct: true },
+        { text: "Ne znam zašto ga nema, to je posao kuhinje i nabave. Netko je valjda krivo izračunao koliko treba naručiti, ali to nije moja stvar, a ni moj problem, pa me nemojte pitati. Pitajte nekog drugog.",
+          why: "Krivnja se prebacuje na kolege, a gost ne dobiva pravo objašnjenje. Treba kratko i bez opravdavanja reći razlog." },
+        { text: "Zato što je danas subota i svi traže ribu, pa smo je rasprodali odmah. Gosti uvijek dolaze kasno, pa se to stalno događa i to apsolutno nije naša greška, nego njihova. Tako je svake subote.",
+          why: "Okrivljuju se gosti i objašnjenje zvuči kao opravdanje. Bolje je istaknuti kvalitetu: svježa riba, bez zamrzavanja." }
+      ],
+      technique: ["kratko objašnjenje koje ističe kvalitetu", "bez opravdavanja i traženja krivca"],
+      guest: "Hm, razumijem. A što mi onda možete preporučiti?"
+    },
+    {
+      label: "Alternative i pitanje o željama",
+      options: [
+        { text: "Mogu Vam preporučiti dvije dobre zamjene. Prva je orada na žaru, blagog okusa i vrlo slična brancinu, uz maslinovo ulje i češnjak. Druga su lignje na žaru, lagano jelo s maslinovim uljem i limunom. Imate li kakvih alergija ili namirnica koje ne volite?", correct: true },
+        { text: "Imamo samo još pastu s povrćem i salatu, ostalo je rasprodano. Mislim da Vam to neće biti dobro, ali možete pogledati jelovnik pa odabrati što god želite, nema veze. Meni je svejedno. Ako Vam ništa ne odgovara, ne možemo Vam više ništa ponuditi.",
+          why: "Nema konkretne ponude ni opisa jela, a ne pita se ništa o preferencijama. Treba ponuditi dvije ili tri alternative uz opis." },
+        { text: "Preporučujem oradu ili lignje ili janjetinu ili tjesteninu, sve je dobro. Zapravo je svejedno što odaberete, sve je ukusno i sve se jako dobro prodaje. Nećete pogriješiti. Ako ne možete odlučiti, uzmite što god želite i javite mi se kad budete spremni.",
+          why: "Previše opcija bez opisa i bez pitanja o alergijama i željama. Treba ponuditi dvije konkretne zamjene i pitati što gost voli." }
+      ],
+      technique: ["pozitivan jezik", "dvije konkretne alternative uz opis", "pitanje o preferencijama i alergijama"],
+      guest: "Nemam alergija. Samo volim lagana jela i ne volim jako začinjeno."
+    },
+    {
+      label: "Preporuka prilagođena gostu",
+      options: [
+        { text: "Onda bih Vam preporučio oradu. Nije jako začinjena i lagana je, a okus Vam neće biti previše različit od brancina.", correct: true },
+        { text: "Preporučujem lignje, to su naše najprodavanije. Jače su začinjene, ali većina gostiju ih voli. Probajte, nećete požaliti.",
+          why: "Preporuka ne uvažava ono što je gost rekao (lagano, ne jako začinjeno). Preporuka mora biti prilagođena gostu." },
+        { text: "Uzmite oradu jer je najskuplja, a tako ćete dobiti najbolje što imamo. Ostalo ionako nije vrijedno spomena, vjerujte mi.",
+          why: "Preporuka se temelji na cijeni, a ne na gostovim željama. Gost treba čuti razlog koji ima veze s onim što je rekao." }
+      ],
+      technique: ["preporuka prilagođena gostovim željama"],
+      guest: "Je li svježa? I koliko dugo trebam čekati?"
+    },
+    {
+      label: "Iskren odgovor",
+      options: [
+        { text: "Da, orada je isporučena jutros. Pripremamo je svježe na žaru, pa je potrebno oko 20 minuta. Cijena je 24 eura.", correct: true },
+        { text: "Mislim da je svježa, ali ne znam kada je stigla. Čeka se pola sata ili duže. Cijenu ne znam, pogledajte jelovnik.",
+          why: "Neodređeni odgovori ne grade povjerenje. Gost je pitao za svježinu i čekanje pa treba iskren i jasan odgovor, uz cijenu." },
+        { text: "Naravno da je svježa, sve nam je uvijek svježe. Pitajte me nešto pametnije. Bit će gotovo kad bude gotovo. Cijena je u jelovniku.",
+          why: "Nepristojan ton, a gost ne dobiva vrijeme čekanja ni cijenu. Gostova se pitanja uvijek shvaćaju ozbiljno." }
+      ],
+      technique: ["iskren odgovor", "vrijeme čekanja i cijena"],
+      guest: "U redu, uzet ću oradu."
+    },
+    {
+      label: "Ponuda priloga",
+      options: [
+        { text: "Odličan izbor. Što biste željeli kao prilog: blitvu s krumpirom ili povrće s roštilja?", correct: true },
+        { text: "Prilog ćete dobiti svakako, uz oradu uvijek ide krumpir. Ne morate birati, jedite što Vam donesem.",
+          why: "Gostu se oduzima izbor. Treba ponuditi konkretne priloge i pustiti ga da odluči." },
+        { text: "Hvala. Gotovo. Samo još jedno, trebate li uopće prilog? Većina ljudi ga ne uzme jer je skup.",
+          why: "Gosta se odvraća od dodatne ponude i zvuči nezainteresirano. Treba konkretno ponuditi priloge uz jelo." }
+      ],
+      technique: ["dodatna ponuda (prilog)", "izbor prepušten gostu"],
+      guest: "Blitvu s krumpirom, molim."
+    },
+    {
+      label: "Preporuka pića",
+      options: [
+        { text: "Dobro. A od pića? Uz oradu preporučujem ohlađen Pošip, lagano bijelo vino, koje se odlično slaže s ribom.", correct: true },
+        { text: "A od pića nemamo ništa posebno, možete uzeti vodu ili sok. Vino je skupo i slabo se prodaje uz ribu.",
+          why: "Gosta se odvraća od vina i daje se netočna informacija. Treba stručno preporučiti piće koje se slaže s jelom." },
+        { text: "Morate uzeti piće, to je pravilo kuće. Uzmite bocu najskupljeg vina ili barem dvije čaše nečega, odmah.",
+          why: "Gosta se prisiljava i guraju se najskuplje stavke. Preporuka treba biti stručna i prilagođena jelu." }
+      ],
+      technique: ["dodatna prodaja kroz stručnu preporuku"],
+      guest: "Može, dvije čaše Pošipa."
+    },
+    {
+      label: "Završno ponavljanje narudžbe",
+      options: [
+        { text: "Dopustite da ponovim narudžbu: jedna orada na žaru s blitvom i krumpirom, jedni njoki sa sirom i tikvicama, te dvije čaše Pošipa. Je li sve točno?", correct: true },
+        { text: "Dobro, sve sam zapisao: oradu, njoke i dva pića. Ako nešto nije točno, javite mi kad dođu jela, ali to se rijetko događa, pa se ne bojte.",
+          why: "Narudžba se ne ponavlja do kraja i ne traži se potvrda. Pogreške se tada otkrivaju tek pri posluživanju." },
+        { text: "Super, to je sve što trebam znati. Ne moram ništa ponavljati jer imam dobro pamćenje, pa ćete sve dobiti kako treba, vjerujte mi.",
+          why: "Preskače se ponavljanje narudžbe. Time se riskiraju pogreške koje će otkriti tek nezadovoljan gost." }
+      ],
+      technique: ["završno ponavljanje narudžbe"],
+      guest: "Da, točno."
+    },
+    {
+      label: "Zahvala i gesta dobre volje",
+      options: [
+        { text: "Hvala na razumijevanju, gospodine Tomiću. Dok čekate, kuća Vam nudi domaći kruh s maslinovim uljem. Hrana stiže za oko 20 minuta. Dobar tek!", correct: true },
+        { text: "Hvala, to je sve. Hrana stiže kad stigne i ne znam točno kada. Ako Vam dugo traje, javite se, ali nemojte me zvati prečesto.",
+          why: "Nema zahvale ni geste dobre volje, a rok je neodređen. Gost treba čuti kada može očekivati jelo." },
+        { text: "Hvala na razumijevanju. Kruh s maslinovim uljem možete platiti ako ga želite. Hrana stiže za oko 20 minuta, ne požurujte nas.",
+          why: "Gesta dobre volje se naplaćuje, a zadnja rečenica zvuči neljubazno. Završetak treba biti topao, uz „Dobar tek!“." }
+      ],
+      technique: ["zahvala", "gesta dobre volje", "ljubazan završetak"],
+      guest: null
+    },
+    {
+      label: "Naknadna provjera zadovoljstva",
+      scene: "Orada je poslužena. Prilaziš stolu da provjeriš je li gost zadovoljan.",
+      options: [
+        { text: "Je li sve u redu s oradom? Treba li Vam još nešto?", correct: true },
+        { text: "Je li jelo bilo dobro? Račun ćete dobiti čim ga zatražite.",
+          why: "Pita se formalno, a odmah se spominje račun. Provjera zadovoljstva treba biti iskrena i usmjerena na gosta." },
+        { text: "Sve u redu? Nemojte reći da nije, kuhinja se potrudila.",
+          why: "Gost se odvraća od iskrenog odgovora. Provjera zadovoljstva znači slušati i prihvatiti povratnu informaciju." }
+      ],
+      technique: ["provjera zadovoljstva gosta"],
+      guest: "Da, sve je odlično. Orada je izvrsna, hvala."
+    }
+  ]
+};
+</script>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s) { return document.querySelector(s); };
+  var startEl = $("#start"), gameEl = $("#game"), chatEl = $("#chat"),
+      choicesEl = $("#choices"), resultEl = $("#result"), barEl = $("#bar"),
+      stepEl = $("#stepLabel"), errEl = $("#errCount");
+  var reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var steps = SCENARIO.steps, n = steps.length;
+  var idx = 0, attempts = [], mistakes = 0, busy = false;
+
+  $("#title").textContent = SCENARIO.title;
+  $("#subtitle").textContent = SCENARIO.subtitle;
+  $("#intro").textContent = SCENARIO.intro;
+  document.title = SCENARIO.title;
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function wait(ms) { return reduce ? 0 : ms; }
+  function reveal(node) {
+    node.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" });
+  }
+  function shuffle(a) {
+    var r = a.slice(), i, j, t;
+    for (i = r.length - 1; i > 0; i--) {
+      j = Math.floor(Math.random() * (i + 1));
+      t = r[i]; r[i] = r[j]; r[j] = t;
+    }
+    return r;
+  }
+
+  function addScene(text) {
+    var s = el("div", "scene", text);
+    chatEl.appendChild(s);
+    return s;
+  }
+
+  function addMessage(who, text, tags) {
+    var row = el("div", "msg " + who);
+    row.appendChild(el("div", "avatar", who === "me" ? "K" : "G"));
+    var col = el("div", "col");
+    col.appendChild(el("div", "who", who === "me" ? SCENARIO.meName : SCENARIO.guestName));
+    col.appendChild(el("div", "bubble", text));
+    if (tags && tags.length) {
+      var t = el("div", "tags");
+      t.appendChild(el("span", "tag-label", "✓ Dobro:"));
+      tags.forEach(function (x) { t.appendChild(el("span", "pill", x)); });
+      col.appendChild(t);
+    }
+    row.appendChild(col);
+    chatEl.appendChild(row);
+    reveal(row);
+    return row;
+  }
+
+  function addTyping() {
+    var row = el("div", "msg guest");
+    row.appendChild(el("div", "avatar", "G"));
+    var col = el("div", "col");
+    var b = el("div", "bubble");
+    var d = el("span", "typing");
+    d.setAttribute("aria-label", "Gost odgovara");
+    d.appendChild(el("span")); d.appendChild(el("span")); d.appendChild(el("span"));
+    b.appendChild(d); col.appendChild(b); row.appendChild(col);
+    chatEl.appendChild(row);
+    reveal(row);
+    return row;
+  }
+
+  function updateProgress() {
+    stepEl.textContent = "Korak " + Math.min(idx + 1, n) + " od " + n;
+    errEl.textContent = "Pogreške: " + mistakes;
+    barEl.style.width = Math.round((idx / n) * 100) + "%";
+  }
+
+  function renderStep() {
+    var step = steps[idx];
+    busy = false;
+    attempts[idx] = 0;
+    updateProgress();
+    if (step.scene) addScene(step.scene);
+
+    choicesEl.innerHTML = "";
+    choicesEl.hidden = false;
+    var h = el("h2", null, "Što kažeš kao konobar?");
+    h.tabIndex = -1;
+    choicesEl.appendChild(h);
+    choicesEl.appendChild(el("p", "sub", "Odaberi jedan od tri odgovora."));
+
+    shuffle(step.options).forEach(function (o, k) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "choice";
+      b.setAttribute("aria-keyshortcuts", String(k + 1));
+      b.appendChild(el("span", "letter", String.fromCharCode(65 + k)));
+      b.appendChild(el("span", "txt", o.text));
+      b.addEventListener("click", function () { pick(o, b, step); });
+      choicesEl.appendChild(b);
+    });
+    reveal(choicesEl);
+    h.focus({ preventScroll: true });
+  }
+
+  function pick(o, btn, step) {
+    if (busy || btn.getAttribute("aria-disabled") === "true") return;
+
+    if (!o.correct) {
+      attempts[idx]++;
+      mistakes++;
+      updateProgress();
+      btn.classList.add("wrong");
+      btn.setAttribute("aria-disabled", "true");
+      btn.querySelector(".txt").appendChild(el("span", "why", "✗ Nije najbolje: " + o.why));
+      reveal(btn);
+      return;
+    }
+
+    busy = true;
+    btn.classList.add("right");
+    btn.setAttribute("aria-disabled", "true");
+    Array.prototype.forEach.call(choicesEl.querySelectorAll(".choice"), function (c) {
+      if (c !== btn) { c.setAttribute("aria-disabled", "true"); if (!c.classList.contains("wrong")) c.classList.add("locked"); }
+    });
+
+    setTimeout(function () {
+      choicesEl.hidden = true;
+      addMessage("me", o.text, step.technique);
+      afterCorrect(step);
+    }, wait(700));
+  }
+
+  function afterCorrect(step) {
+    function next() {
+      idx++;
+      if (idx < n) renderStep(); else finish();
+    }
+    if (step.guest) {
+      var t = addTyping();
+      setTimeout(function () {
+        t.remove();
+        addMessage("guest", step.guest);
+        setTimeout(next, wait(600));
+      }, wait(1000));
+    } else {
+      setTimeout(next, wait(700));
+    }
+  }
+
+  function finish() {
+    idx = n;
+    updateProgress();
+    stepEl.textContent = "Razgovor završen";
+    barEl.style.width = "100%";
+    choicesEl.hidden = true;
+
+    var first = attempts.filter(function (a) { return a === 0; }).length;
+    var ratio = first / n, msg;
+    if (first === n) msg = "Izvrsno! Svi su odgovori bili točni iz prvog pokušaja.";
+    else if (ratio >= 0.75) msg = "Vrlo dobro! Većina odgovora bila je točna iz prvog pokušaja.";
+    else if (ratio >= 0.5) msg = "Dobro, ali vrijedi ponoviti. Obrati pažnju na objašnjenja uz pogrešne odgovore.";
+    else msg = "Pokušaj ponovno. Obrati pažnju na iskrenost prema gostu, objašnjenje bez okrivljavanja i konkretne alternative.";
+
+    resultEl.innerHTML = "";
+    var h = el("h2", null, "Kraj razgovora");
+    h.tabIndex = -1;
+    resultEl.appendChild(h);
+    resultEl.appendChild(el("div", "score", first + " / " + n + " iz prvog pokušaja"));
+    resultEl.appendChild(el("p", null, msg));
+
+    var ul = el("ul", "res");
+    steps.forEach(function (s, i) {
+      var li = el("li");
+      var ok = attempts[i] === 0;
+      li.appendChild(el("span", "ico " + (ok ? "good" : "meh"), ok ? "✓" : "✗"));
+      var d = el("div");
+      d.appendChild(document.createTextNode((i + 1) + ". " + s.label + " "));
+      var sm = el("small", null, ok ? "(iz prvog pokušaja)" : "(" + attempts[i] + (attempts[i] === 1 ? " pogreška)" : " pogreške)"));
+      d.appendChild(sm);
+      li.appendChild(d);
+      ul.appendChild(li);
+    });
+    resultEl.appendChild(ul);
+
+    var again = el("button", "primary", "Igraj ponovno");
+    again.type = "button";
+    again.addEventListener("click", start);
+    resultEl.appendChild(again);
+
+    resultEl.hidden = false;
+    reveal(resultEl);
+    h.focus({ preventScroll: true });
+  }
+
+  function start() {
+    idx = 0; attempts = []; mistakes = 0; busy = false;
+    chatEl.innerHTML = "";
+    resultEl.hidden = true;
+    startEl.hidden = true;
+    gameEl.hidden = false;
+    window.scrollTo(0, 0);
+    addScene(SCENARIO.scene);
+    renderStep();
+  }
+
+  $("#startBtn").addEventListener("click", start);
+
+  document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (gameEl.hidden || choicesEl.hidden || busy) return;
+    var k = parseInt(e.key, 10);
+    if (k >= 1 && k <= 3) {
+      var btns = choicesEl.querySelectorAll(".choice");
+      if (btns[k - 1]) btns[k - 1].click();
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Telefonska rezervacija – igra uloga</title>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f7fafc; --card:#ffffff; --ink:#223040; --muted:#5d6c7f; --line:#e1e8ef;
+  --accent:#25758f; --accent-ink:#ffffff; --guest:#eff4f8; --me:#e3f5f1;
+  --ok:#1d7a4c; --ok-bg:#e8f7ee; --bad:#b42318; --bad-bg:#fff0ee;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:linear-gradient(#eef7fb, var(--bg) 260px) no-repeat, var(--bg); color:var(--ink);
+  font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+#app{max-width:760px; margin:0 auto; padding:0 1rem 3rem}
+header.top{padding:1.4rem 0 .4rem}
+header.top h1{margin:0; font-size:1.55rem; line-height:1.25}
+header.top p{margin:.3rem 0 0; color:var(--muted)}
+
+.card{background:var(--card); border:1px solid var(--line); border-radius:1rem; padding:1.2rem 1.3rem; margin-top:1rem; box-shadow:0 1px 3px rgba(34,48,64,.05)}
+.card h2{margin:0 0 .5rem; font-size:1.1rem}
+.card ol{margin:.4rem 0 1rem; padding-left:1.3rem}
+.card li{margin:.25rem 0}
+.hint{color:var(--muted); font-size:.9rem}
+
+button.primary{
+  font:inherit; font-weight:600; cursor:pointer; border:0; border-radius:.8rem;
+  padding:.8rem 1.4rem; background:var(--accent); color:var(--accent-ink);
+}
+button.primary:hover{filter:brightness(1.08)}
+button.primary:focus-visible{outline:3px solid var(--accent); outline-offset:3px}
+
+/* progress */
+#progress{
+  position:sticky; top:0; z-index:5; background:var(--bg);
+  padding:.7rem 0 .6rem; border-bottom:1px solid var(--line);
+}
+#progress .row{display:flex; justify-content:space-between; font-size:.9rem; color:var(--muted); margin-bottom:.4rem}
+.track{height:.5rem; background:var(--line); border-radius:1rem; overflow:hidden}
+#bar{height:100%; width:0; background:var(--accent); transition:width .4s ease}
+
+/* chat */
+#chat{padding-top:.4rem}
+.scene{
+  margin:1rem 0; padding:.7rem 1rem; text-align:center; font-size:.92rem;
+  color:var(--muted); background:var(--card); border:1px dashed #cfdbe6; border-radius:.8rem;
+}
+.msg{display:flex; gap:.6rem; margin:.9rem 0; align-items:flex-end; animation:pop .25s ease-out}
+.msg.me{flex-direction:row-reverse}
+.avatar{
+  flex:none; width:2.2rem; height:2.2rem; border-radius:50%; display:grid; place-items:center;
+  font-weight:700; font-size:.85rem; background:#dde6ee; color:var(--ink);
+}
+.msg.me .avatar{background:var(--accent); color:var(--accent-ink)}
+.col{max-width:min(86%,36rem)}
+.msg.me .col{display:flex; flex-direction:column; align-items:flex-end}
+.who{font-size:.75rem; color:var(--muted); margin:0 .3rem .15rem}
+.bubble{padding:.7rem .95rem; border-radius:1rem; line-height:1.5}
+.guest .bubble{background:var(--guest); border-bottom-left-radius:.3rem}
+.me .bubble{background:var(--me); border-bottom-right-radius:.3rem}
+.tags{margin-top:.4rem; display:flex; flex-wrap:wrap; gap:.3rem; align-items:center; justify-content:flex-end}
+.tag-label{font-size:.78rem; color:var(--ok); font-weight:600}
+.pill{font-size:.78rem; padding:.1rem .55rem; border-radius:1rem; background:var(--ok-bg); color:var(--ok); border:1px solid #9fd5b6}
+.typing{display:inline-flex; gap:.25rem; padding:.2rem 0}
+.typing span{width:.5rem; height:.5rem; border-radius:50%; background:var(--muted); animation:blink 1s infinite}
+.typing span:nth-child(2){animation-delay:.15s}
+.typing span:nth-child(3){animation-delay:.3s}
+
+/* choices */
+#choices{margin-top:1.2rem; padding:1rem 1rem 1.1rem; border:1px solid var(--line); border-radius:1rem; background:var(--card); box-shadow:0 1px 3px rgba(34,48,64,.05)}
+#choices h2{margin:0 0 .2rem; font-size:1rem}
+#choices h2:focus{outline:none}
+#choices .sub{margin:0 0 .4rem; font-size:.88rem; color:var(--muted)}
+.choice{
+  display:flex; gap:.75rem; width:100%; text-align:left; padding:.8rem .9rem; margin:.55rem 0 0;
+  border:2px solid var(--line); border-radius:.8rem; background:transparent; color:inherit;
+  font:inherit; line-height:1.45; cursor:pointer;
+}
+.choice:hover{border-color:var(--accent); background:#f4fafc}
+.choice:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+.letter{
+  flex:none; width:1.7rem; height:1.7rem; border-radius:50%; display:grid; place-items:center;
+  font-size:.82rem; font-weight:700; background:#e3ebf2; color:var(--ink); margin-top:.05rem;
+}
+.txt{display:block; flex:1}
+.why{display:block; margin-top:.5rem; font-size:.9rem; color:var(--bad); font-weight:500}
+.choice.wrong{border-color:#e8a29b; background:var(--bad-bg); cursor:default; animation:shake .3s}
+.choice.wrong:hover{border-color:#e8a29b; background:var(--bad-bg)}
+.choice.wrong .letter{background:var(--bad); color:#fff}
+.choice.right{border-color:#7cc79b; background:var(--ok-bg); cursor:default}
+.choice.right:hover{border-color:#7cc79b; background:var(--ok-bg)}
+.choice.right .letter{background:var(--ok); color:#fff}
+.choice.locked{cursor:default; opacity:.55}
+.choice.locked:hover{border-color:var(--line); background:transparent}
+
+/* result */
+#result h2{margin:0 0 .3rem; font-size:1.3rem}
+#result h2:focus{outline:none}
+.score{font-size:2rem; font-weight:700; margin:.2rem 0; color:var(--accent)}
+.res{list-style:none; margin:.8rem 0 1.1rem; padding:0}
+.res li{display:flex; gap:.6rem; padding:.45rem 0; border-top:1px solid var(--line)}
+.res .ico{flex:none; width:1.3rem; font-weight:700}
+.res .good{color:var(--ok)}
+.res .meh{color:var(--bad)}
+.res small{color:var(--muted)}
+
+footer{margin-top:2rem; text-align:center; font-size:.82rem; color:var(--muted)}
+
+@keyframes pop{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@media (prefers-reduced-motion: reduce){
+  *{animation:none!important; transition:none!important}
+}
+</style>
+</head>
+<body>
+<main id="app">
+  <header class="top">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </header>
+
+  <noscript><div class="card">Za rad aplikacije potrebno je uključiti JavaScript u pregledniku.</div></noscript>
+
+  <section id="start" class="card">
+    <h2>Kako se igra</h2>
+    <p id="intro"></p>
+    <ol>
+      <li>Pročitaj što kaže gost.</li>
+      <li>Među tri ponuđena odgovora odaberi onaj koji bi rekao dobar recepcionar. Samo je jedan točan.</li>
+      <li>Kod pogrešnog odgovora dobiješ objašnjenje i probaš ponovno. Kod točnog gost odgovara i ponude se nova tri odgovora.</li>
+    </ol>
+    <p class="hint">Odgovore možeš birati i tipkama 1, 2 i 3.</p>
+    <button type="button" class="primary" id="startBtn">Započni razgovor</button>
+  </section>
+
+  <section id="game" hidden>
+    <div id="progress">
+      <div class="row"><span id="stepLabel"></span><span id="errCount"></span></div>
+      <div class="track"><div id="bar"></div></div>
+    </div>
+    <div id="chat" role="log" aria-live="polite" aria-label="Razgovor"></div>
+    <div id="choices" hidden></div>
+    <div id="result" class="card" hidden></div>
+  </section>
+
+  <footer>Radi bez interneta. Datoteku je dovoljno otvoriti u pregledniku.</footer>
+</main>
+
+<!-- ===========================================================
+     PODACI O RAZGOVORU – ovdje se mogu uređivati tekstovi.
+     Svaki korak: options (3 odgovora recepcionara, točno jedan
+     ima correct:true), guest (odgovor gosta nakon točnog odgovora),
+     technique (što je dobro napravljeno), label (za završni pregled).
+     =========================================================== -->
+<script>
+const SCENARIO = {
+  title: "Telefonska rezervacija – igra uloga",
+  subtitle: "Igra uloga: ti si recepcionarka",
+  intro: "Ti si recepcionar u Hotelu Jadran. Utorak je prijepodne i na telefon se javlja gospođa Ivana Kovačević, koja želi rezervirati sobu za obiteljski vikend u prosincu. U svakom koraku odaberi odgovor koji pokazuje profesionalan razgovor: prikupi podatke, postavi dodatna pitanja i na kraju potvrdi rezervaciju.",
+  scene: "Hotel Jadran, utorak prijepodne. Telefon zvoni. Ti si recepcionarka Ana Marić.",
+  meName: "Recepcionar",
+  guestName: "Gost",
+  steps: [
+    {
+      label: "Javljanje na telefon",
+      options: [
+        { text: "Hotel Jadran, recepcija, Ana Marić, dobar dan. Kako Vam mogu pomoći?", correct: true },
+        { text: "Halo? Recepcija, recite što trebate, nemam puno vremena za razgovor.",
+          why: "Javljanje s „Halo?“ i nestrpljiv ton. Treba reći naziv hotela, svoje ime i pozdraviti." },
+        { text: "Dobar dan, izvolite. Kako se zovete i što točno želite od nas?",
+          why: "Nema naziva hotela ni imena recepcionara, a gost se odmah ispituje. Prvo se predstavi, a zatim pitaj kako možeš pomoći." }
+      ],
+      technique: ["jasan pozdrav s nazivom hotela i imenom", "ljubazan ton"],
+      guest: "Dobar dan. Željela bih rezervirati sobu za prosinac."
+    },
+    {
+      label: "Datumi boravka",
+      options: [
+        { text: "Naravno, rado ću Vam pomoći. Za koje datume planirate boravak?", correct: true },
+        { text: "Prosinac je jako zauzet, ne znam imamo li išta slobodno. Recite datum pa ću provjeriti.",
+          why: "Gosta se obeshrabruje prije nego što je dostupnost provjerena. Treba biti ljubazan i spreman pomoći." },
+        { text: "Rado. Možete li mi odmah reći ime, broj telefona i broj kartice za rezervaciju?",
+          why: "Prerano se traže osobni i financijski podaci. Prvo se doznaju datumi i potrebe gosta, a broj kartice se nikad ne traži telefonom." }
+      ],
+      technique: ["otvoreno pitanje"],
+      guest: "Od 12. do 15. prosinca."
+    },
+    {
+      label: "Ponavljanje datuma",
+      options: [
+        { text: "Dakle, dolazak u subotu, 12. prosinca, a odlazak u utorak, 15. prosinca, što je ukupno tri noćenja. Je li tako?", correct: true },
+        { text: "U redu, od 12. do 15. Zapisala sam to u sustav i nema potrebe da ponavljamo. Idemo dalje, trebam još podataka od Vas.",
+          why: "Datumi se ne ponavljaju ni ne potvrđuju. Ako se pogriješi u datumu, pogrešna je cijela rezervacija." },
+        { text: "Dobro, dakle od 12. do 15. prosinca, to je valjda dva ili tri dana, nije bitno, to ćemo već nekako vidjeti pri obračunu. Imate li djece?",
+          why: "Neprecizno i nehajno: ne provjerava se broj noćenja ni dan u tjednu. Treba jasno ponoviti datume i broj noćenja." }
+      ],
+      technique: ["ponavljanje podatka radi provjere", "dan u tjednu kao dodatna sigurnost"],
+      guest: "Da, točno."
+    },
+    {
+      label: "Broj osoba",
+      options: [
+        { text: "Hvala. Za koliko osoba trebate smještaj?", correct: true },
+        { text: "Hvala. Pretpostavljam da putujete u paru, je li tako?",
+          why: "Pretpostavka umjesto pitanja. Broj osoba i dob djece treba doznati od gosta." },
+        { text: "Hvala. Želite li jeftiniju ili skuplju sobu?",
+          why: "Pita se o cijeni prije nego što se zna tko putuje. Prvo se doznaje broj osoba, a tek onda se nudi odgovarajuća soba." }
+      ],
+      technique: ["pitanje o broju osoba"],
+      guest: "Dvije odrasle osobe i dijete od šest godina."
+    },
+    {
+      label: "Ponuda sobe",
+      options: [
+        { text: "Za tu obitelj preporučujem dvokrevetnu sobu s pomoćnim ležajem za dijete. Za te datume imamo slobodnu sobu. Želite li pogled na more ili na park?", correct: true },
+        { text: "Za troje imamo samo apartman, a on je puno skuplji. Ako Vam ne odgovara, nažalost nemamo ništa drugo za te datume. Hoćete li ga uzeti? Moram znati odmah.",
+          why: "Nudi se samo najskuplja opcija i nema izbora. Treba ponuditi odgovarajuće rješenje i gostu dati izbor." },
+        { text: "Dijete možete smjestiti u istu sobu, nema problema. Sve su sobe jednake i nema razlike u pogledu, pa Vam ne moram nuditi izbor. Samo dođite pa ćemo vidjeti što ima.",
+          why: "Ne nudi se prikladan smještaj za dijete (pomoćni ležaj) niti izbor sobe. Gost treba dobiti konkretnu ponudu." }
+      ],
+      technique: ["dodatno pitanje", "ponuda odgovarajućeg rješenja i izbor"],
+      guest: "More, ako je moguće. Koliko to košta?"
+    },
+    {
+      label: "Cijena",
+      options: [
+        { text: "Soba s pogledom na more i pomoćnim ležajem košta 110 eura po noći, a doručak je uključen u cijenu. Za tri noćenja to je ukupno 330 eura. Boravišna pristojba plaća se zasebno, prema važećem cjeniku.", correct: true },
+        { text: "Soba košta oko 110 eura po noći, možda malo više ili manje, ovisi o sezoni. Doručak se plaća posebno ako ga budete željeli. Konačnu cijenu ćete vidjeti kad dođete na recepciju, a pisanu potvrdu cijene možemo poslati kasnije, ako baš želite.",
+          why: "Neodređena cijena stvara nepovjerenje. Treba jasno reći cijenu, što je uključeno i što nije." },
+        { text: "Cijena je 110 eura po noći, a ukupno 330 eura za cijeli boravak. Sve je uključeno, i doručak i sve takse, tako da ne trebate ništa dodatno plaćati kod odjave. Račun ćete dobiti odmah pri dolasku, a sve ostalo je isto.",
+          why: "Netočna tvrdnja: boravišna pristojba plaća se zasebno. Treba jasno reći što je uključeno, a što nije." }
+      ],
+      technique: ["jasna cijena", "što je uključeno", "što nije"],
+      guest: "Odlično, to mi odgovara."
+    },
+    {
+      label: "Ime za rezervaciju",
+      options: [
+        { text: "Super. Trebam još nekoliko podataka. Na čije ime da napravim rezervaciju?", correct: true },
+        { text: "Super. Rezervaciju ću napraviti na Vaš broj telefona, ime mi nije potrebno.",
+          why: "Rezervacija mora imati ime gosta. Ime je osnovni podatak svake rezervacije." },
+        { text: "Super. Sad mi odmah recite sve što moram zapisati: ime, kontakt, karticu i želje.",
+          why: "Gosta zbunjuje traženje svega odjednom, i to uključujući broj kartice. Podaci se prikupljaju jedan po jedan." }
+      ],
+      technique: ["najava daljnjih pitanja", "pitanje za ime"],
+      guest: "Ivana Kovačević."
+    },
+    {
+      label: "Provjera imena i telefon",
+      options: [
+        { text: "Ivana Kovačević. Hvala. Na koji broj telefona Vas možemo kontaktirati?", correct: true },
+        { text: "Hvala. Na koji broj telefona Vas možemo kontaktirati?",
+          why: "Ime se ne ponavlja pa se pogreške ne otkrivaju. Gostovo ime treba ponoviti radi provjere." },
+        { text: "Dobro, Ivana, to sam zapisala kako sam čula. Kontakt broj? Ako ne želite, može i bez njega.",
+          why: "Prezime se ne provjerava, a kontakt se prikazuje kao nebitan. Telefon je važan ako dođe do promjene ili problema." }
+      ],
+      technique: ["provjera imena"],
+      guest: "091 234 5678."
+    },
+    {
+      label: "Telefon i e-pošta",
+      options: [
+        { text: "091 234 5678. A na koju adresu e-pošte da pošaljem potvrdu?", correct: true },
+        { text: "Hvala. Potvrdu ću poslati na broj telefona, e-pošta nije potrebna.",
+          why: "Broj se ne ponavlja pa se pogreške ne otkrivaju, a potvrda rezervacije obično se šalje e-poštom." },
+        { text: "Dobro, to sam zapisala. E-poštu ću naći sama u sustavu, ne morate je diktirati.",
+          why: "Adresu e-pošte treba pitati i provjeriti. Pretpostavke u sustavu ne zamjenjuju gostov podatak." }
+      ],
+      technique: ["ponavljanje telefonskog broja", "pitanje za e-poštu"],
+      guest: "ivana točka kovacevic, na, gmail točka com."
+    },
+    {
+      label: "Ponavljanje e-pošte",
+      options: [
+        { text: "Dakle, ivana.kovacevic@gmail.com. Je li tako?", correct: true },
+        { text: "Hvala, zapisala sam adresu. Poslat ću potvrdu čim stignem.",
+          why: "Adresa se ne ponavlja pa se pogreške ne otkrivaju. To je najčešći izvor grešaka, pa je treba ponoviti i potvrditi." },
+        { text: "Dobro, nešto na Gmailu. Ako potvrda ne stigne, javite nam se.",
+          why: "Ne provjerava se točna adresa. Ako je adresa pogrešna, gost neće dobiti potvrdu." }
+      ],
+      technique: ["ponavljanje kontakta", "najčešći izvor grešaka"],
+      guest: "Da."
+    },
+    {
+      label: "Posebne želje",
+      options: [
+        { text: "Imate li kakvih posebnih želja? Primjerice, u koliko sati planirate stići? Prijava je od 14:00. Trebate li parkirno mjesto?", correct: true },
+        { text: "To je sve što trebam. Prijava je od 14:00, a ako Vam još nešto zatreba, to ćete riješiti kad stignete na recepciju.",
+          why: "Ne pita se ni o dolasku ni o posebnim željama. Dodatna pitanja poboljšavaju uslugu i sprječavaju iznenađenja." },
+        { text: "Trebate li možda i neki skuplji paket usluga, masažu ili večeru? Imamo odlične ponude samo za ovaj vikend.",
+          why: "Agresivna prodaja umjesto pitanja o gostovim potrebama. Treba pitati o vremenu dolaska, parkingu i željama." }
+      ],
+      technique: ["dodatna pitanja o potrebama gosta"],
+      guest: "Stižemo oko 18 sati i trebamo parking. Također bismo voljeli sobu na višem katu, da bude mirno."
+    },
+    {
+      label: "Iskrenost oko želja",
+      options: [
+        { text: "Zabilježila sam dolazak oko 18:00 i parkirno mjesto, koje je besplatno za naše goste. Želju za višim katom i mirnom sobom upisat ću u rezervaciju i nastojat ćemo je ispuniti, no ne mogu je potpuno jamčiti.", correct: true },
+        { text: "Naravno, sve ćemo to zabilježiti. Sobu na najvišem katu i potpunu tišinu jamčim Vam, to je kod nas standard i nema nikakvog problema. Slobodno računajte na to, gosti nam se uvijek vrate upravo zbog toga.",
+          why: "Obećava se ono što se ne može sigurno ispuniti. Treba biti iskren: želja se bilježi, ali se ne jamči." },
+        { text: "Parkirno mjesto možemo osigurati, ali za viši kat i tišinu ne zapisujem ništa jer takve želje ne možemo ispuniti, pa se ne trebate nadati ničemu. Ako želite, možete pokušati pitati ponovno pri dolasku.",
+          why: "Želja se odbija bez provjere. Treba je zabilježiti i nastojati ispuniti, uz iskrenu napomenu da nije zajamčena." }
+      ],
+      technique: ["iskrenost", "ne obećava se ono što se ne može sigurno ispuniti"],
+      guest: "U redu, razumijem."
+    },
+    {
+      label: "Jamstvo i otkazivanje",
+      options: [
+        { text: "Za jamstvo rezervacije poslat ću Vam na e-poštu sigurnu poveznicu za unos podataka kartice, pa Vas molim da ih ne izgovarate telefonom. Rezervaciju možete besplatno otkazati do 5. prosinca, odnosno sedam dana prije dolaska.", correct: true },
+        { text: "Za jamstvo mi sada, molim Vas, izgovorite broj kartice, datum isteka i troznamenkasti kod na poleđini pa ću sve odmah upisati u sustav. O otkazivanju ćemo razgovarati kad dođe vrijeme, to sada nije važno. Tako će i potvrda biti odmah gotova.",
+          why: "Broj kartice nikad se ne traži telefonom. Podaci se šalju preko sigurne poveznice, a gost mora odmah dobiti uvjete otkazivanja." },
+        { text: "Rezervacija je gotova i ništa dodatno ne trebate napraviti. Otkazati je ne možete, ali ako se predomislite, možda nam se javite pa ćemo vidjeti što se može učiniti u tom slučaju. Za sve ostalo nemojte brinuti, sve je u redu.",
+          why: "Nema jamstva ni jasnih uvjeta otkazivanja. Gost treba znati rok i pravila besplatnog otkazivanja." }
+      ],
+      technique: ["sigurnost podataka", "uvjeti otkazivanja"],
+      guest: "Dobro, hvala."
+    },
+    {
+      label: "Završno ponavljanje",
+      options: [
+        { text: "Dopustite da još jednom ponovim rezervaciju. Gospođa Ivana Kovačević, dvokrevetna soba s pomoćnim ležajem i pogledom na more, od subote 12. do utorka 15. prosinca, tri noćenja, dvije odrasle osobe i dijete od šest godina. Doručak je uključen, ukupna cijena je 330 eura. Dolazak oko 18:00, parkirno mjesto osigurano, želja za višim katom i mirnom sobom zabilježena. Kontakt: 091 234 5678. Je li sve točno?", correct: true },
+        { text: "Dopustite da sažmem: soba za tri noćenja od 12. prosinca, za troje, s pogledom na more, ukupno 330 eura. Dolazak i parking su dogovoreni, a želje ću proslijediti. Sve ostalo sam zapisala pa nema potrebe da ponavljam svaki podatak. Ako nešto nije točno, javite nam se kad Vam stigne potvrda e-poštom, i to će biti u redu. Slobodno nas nazovite ako Vam nešto zatreba prije dolaska, a ostalo ćemo riješiti na recepciji.",
+          why: "Sažetak je nepotpun i ne traži potvrdu. Treba ponoviti sve podatke i pitati je li sve točno prije završetka razgovora." },
+        { text: "Sve je u redu, rezervacija je u sustavu. Mislim da smo pokrili sve: datume, sobu, cijenu i kontakt. Nema potrebe da to opet prolazimo jer bismo samo gubili vrijeme, a znam da ste zauzeti, pa ću Vas pustiti da nastavite s danom. Ako bude pogreške, ispravit ćemo je na dan dolaska. Potvrda će Vam stići u roku od nekoliko minuta, pa je tamo možete još jednom pročitati i javiti ako nešto ne štima, tako je jednostavnije.",
+          why: "Završno ponavljanje se preskače da se uštedi vrijeme. Pogreške se tada otkrivaju tek pri dolasku gosta." }
+      ],
+      technique: ["završno ponavljanje svih podataka"],
+      guest: "Da, sve je točno."
+    },
+    {
+      label: "Potvrda i broj rezervacije",
+      options: [
+        { text: "Odlično. Broj Vaše rezervacije je HJ-4821. Potvrdu ćete dobiti e-poštom u roku od nekoliko minuta. Imate li još kakvih pitanja?", correct: true },
+        { text: "Odlično. Rezervacija je u sustavu, a potvrdu ćete negdje dobiti. Broj rezervacije Vam sada ne trebam davati, naći ćete ga u potvrdi, ako stigne.",
+          why: "Nema broja rezervacije ni roka za potvrdu. Gost treba dobiti konkretne podatke i priliku za pitanja." },
+        { text: "Odlično. Broj rezervacije je HJ-4821, a potvrdu ćete dobiti e-poštom. Dodatna pitanja ne mogu primati jer je na recepciji velika gužva.",
+          why: "Gostu se uskraćuje mogućnost pitanja. Prije završetka treba pitati: „Imate li još kakvih pitanja?“" }
+      ],
+      technique: ["potvrda s brojem rezervacije"],
+      guest: "Ne, to je sve. Hvala."
+    },
+    {
+      label: "Završetak razgovora",
+      options: [
+        { text: "Hvala Vam što ste odabrali Hotel Jadran, gospođo Kovačević. Radujemo se Vašem dolasku. Doviđenja!", correct: true },
+        { text: "Hvala na pozivu, doviđenja. Ako ste nešto zaboravili reći, nazovite opet kad Vam bude zgodno.",
+          why: "Nema obraćanja gostu imenom ni tople zahvale. Završetak treba biti ljubazan i osoban." },
+        { text: "Super, onda gotovo. Vidimo se 12. prosinca, ali nemojte zakasniti jer ćemo sobu dati nekome drugome.",
+          why: "Prijeteći i neljubazan završetak. Gost se mora osjećati dobrodošlo." }
+      ],
+      technique: ["ljubazan završetak", "obraćanje imenom"],
+      guest: null
+    }
+  ]
+};
+</script>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s) { return document.querySelector(s); };
+  var startEl = $("#start"), gameEl = $("#game"), chatEl = $("#chat"),
+      choicesEl = $("#choices"), resultEl = $("#result"), barEl = $("#bar"),
+      stepEl = $("#stepLabel"), errEl = $("#errCount");
+  var reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var steps = SCENARIO.steps, n = steps.length;
+  var idx = 0, attempts = [], mistakes = 0, busy = false;
+
+  $("#title").textContent = SCENARIO.title;
+  $("#subtitle").textContent = SCENARIO.subtitle;
+  $("#intro").textContent = SCENARIO.intro;
+  document.title = SCENARIO.title;
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function wait(ms) { return reduce ? 0 : ms; }
+  function reveal(node) {
+    node.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" });
+  }
+  function shuffle(a) {
+    var r = a.slice(), i, j, t;
+    for (i = r.length - 1; i > 0; i--) {
+      j = Math.floor(Math.random() * (i + 1));
+      t = r[i]; r[i] = r[j]; r[j] = t;
+    }
+    return r;
+  }
+
+  function addScene(text) {
+    var s = el("div", "scene", text);
+    chatEl.appendChild(s);
+    return s;
+  }
+
+  function addMessage(who, text, tags) {
+    var row = el("div", "msg " + who);
+    row.appendChild(el("div", "avatar", who === "me" ? "R" : "G"));
+    var col = el("div", "col");
+    col.appendChild(el("div", "who", who === "me" ? SCENARIO.meName : SCENARIO.guestName));
+    col.appendChild(el("div", "bubble", text));
+    if (tags && tags.length) {
+      var t = el("div", "tags");
+      t.appendChild(el("span", "tag-label", "✓ Dobro:"));
+      tags.forEach(function (x) { t.appendChild(el("span", "pill", x)); });
+      col.appendChild(t);
+    }
+    row.appendChild(col);
+    chatEl.appendChild(row);
+    reveal(row);
+    return row;
+  }
+
+  function addTyping() {
+    var row = el("div", "msg guest");
+    row.appendChild(el("div", "avatar", "G"));
+    var col = el("div", "col");
+    var b = el("div", "bubble");
+    var d = el("span", "typing");
+    d.setAttribute("aria-label", "Gost odgovara");
+    d.appendChild(el("span")); d.appendChild(el("span")); d.appendChild(el("span"));
+    b.appendChild(d); col.appendChild(b); row.appendChild(col);
+    chatEl.appendChild(row);
+    reveal(row);
+    return row;
+  }
+
+  function updateProgress() {
+    stepEl.textContent = "Korak " + Math.min(idx + 1, n) + " od " + n;
+    errEl.textContent = "Pogreške: " + mistakes;
+    barEl.style.width = Math.round((idx / n) * 100) + "%";
+  }
+
+  function renderStep() {
+    var step = steps[idx];
+    busy = false;
+    attempts[idx] = 0;
+    updateProgress();
+    if (step.scene) addScene(step.scene);
+
+    choicesEl.innerHTML = "";
+    choicesEl.hidden = false;
+    var h = el("h2", null, "Što kaže recepcionarka?");
+    h.tabIndex = -1;
+    choicesEl.appendChild(h);
+    choicesEl.appendChild(el("p", "sub", "Odaberi jedan od tri odgovora."));
+
+    shuffle(step.options).forEach(function (o, k) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "choice";
+      b.setAttribute("aria-keyshortcuts", String(k + 1));
+      b.appendChild(el("span", "letter", String.fromCharCode(65 + k)));
+      b.appendChild(el("span", "txt", o.text));
+      b.addEventListener("click", function () { pick(o, b, step); });
+      choicesEl.appendChild(b);
+    });
+    reveal(choicesEl);
+    h.focus({ preventScroll: true });
+  }
+
+  function pick(o, btn, step) {
+    if (busy || btn.getAttribute("aria-disabled") === "true") return;
+
+    if (!o.correct) {
+      attempts[idx]++;
+      mistakes++;
+      updateProgress();
+      btn.classList.add("wrong");
+      btn.setAttribute("aria-disabled", "true");
+      btn.querySelector(".txt").appendChild(el("span", "why", "✗ Nije najbolje: " + o.why));
+      reveal(btn);
+      return;
+    }
+
+    busy = true;
+    btn.classList.add("right");
+    btn.setAttribute("aria-disabled", "true");
+    Array.prototype.forEach.call(choicesEl.querySelectorAll(".choice"), function (c) {
+      if (c !== btn) { c.setAttribute("aria-disabled", "true"); if (!c.classList.contains("wrong")) c.classList.add("locked"); }
+    });
+
+    setTimeout(function () {
+      choicesEl.hidden = true;
+      addMessage("me", o.text, step.technique);
+      afterCorrect(step);
+    }, wait(700));
+  }
+
+  function afterCorrect(step) {
+    function next() {
+      idx++;
+      if (idx < n) renderStep(); else finish();
+    }
+    if (step.guest) {
+      var t = addTyping();
+      setTimeout(function () {
+        t.remove();
+        addMessage("guest", step.guest);
+        setTimeout(next, wait(600));
+      }, wait(1000));
+    } else {
+      setTimeout(next, wait(700));
+    }
+  }
+
+  function finish() {
+    idx = n;
+    updateProgress();
+    stepEl.textContent = "Razgovor završen";
+    barEl.style.width = "100%";
+    choicesEl.hidden = true;
+
+    var first = attempts.filter(function (a) { return a === 0; }).length;
+    var ratio = first / n, msg;
+    if (first === n) msg = "Izvrsno! Svi su odgovori bili točni iz prvog pokušaja.";
+    else if (ratio >= 0.75) msg = "Vrlo dobro! Većina odgovora bila je točna iz prvog pokušaja.";
+    else if (ratio >= 0.5) msg = "Dobro, ali vrijedi ponoviti. Obrati pažnju na objašnjenja uz pogrešne odgovore.";
+    else msg = "Pokušaj ponovno. Obrati pažnju na ponavljanje podataka, iskrenost prema gostu i sigurnost podataka o kartici.";
+
+    resultEl.innerHTML = "";
+    var h = el("h2", null, "Kraj razgovora");
+    h.tabIndex = -1;
+    resultEl.appendChild(h);
+    resultEl.appendChild(el("div", "score", first + " / " + n + " iz prvog pokušaja"));
+    resultEl.appendChild(el("p", null, msg));
+
+    var ul = el("ul", "res");
+    steps.forEach(function (s, i) {
+      var li = el("li");
+      var ok = attempts[i] === 0;
+      li.appendChild(el("span", "ico " + (ok ? "good" : "meh"), ok ? "✓" : "✗"));
+      var d = el("div");
+      d.appendChild(document.createTextNode((i + 1) + ". " + s.label + " "));
+      var sm = el("small", null, ok ? "(iz prvog pokušaja)" : "(" + attempts[i] + (attempts[i] === 1 ? " pogreška)" : " pogreške)"));
+      d.appendChild(sm);
+      li.appendChild(d);
+      ul.appendChild(li);
+    });
+    resultEl.appendChild(ul);
+
+    var again = el("button", "primary", "Igraj ponovno");
+    again.type = "button";
+    again.addEventListener("click", start);
+    resultEl.appendChild(again);
+
+    resultEl.hidden = false;
+    reveal(resultEl);
+    h.focus({ preventScroll: true });
+  }
+
+  function start() {
+    idx = 0; attempts = []; mistakes = 0; busy = false;
+    chatEl.innerHTML = "";
+    resultEl.hidden = true;
+    startEl.hidden = true;
+    gameEl.hidden = false;
+    window.scrollTo(0, 0);
+    addScene(SCENARIO.scene);
+    renderStep();
+  }
+
+  $("#startBtn").addEventListener("click", start);
+
+  document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (gameEl.hidden || choicesEl.hidden || busy) return;
+    var k = parseInt(e.key, 10);
+    if (k >= 1 && k <= 3) {
+      var btns = choicesEl.querySelectorAll(".choice");
+      if (btns[k - 1]) btns[k - 1].click();
+    }
+  });
+})();
+</script>
+</body>
+</html>

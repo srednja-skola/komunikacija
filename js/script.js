@@ -1,6 +1,7 @@
 // footer copyleft (nova godina se mjenja automatski)
 // encrypt
 var pokrivac = document.querySelector(".pokrivac"),
+copyleft = document.querySelector(".copyleft"),
   copyleft = document.querySelector(".copyleft");
 
 // rute za pojedinu stranicu

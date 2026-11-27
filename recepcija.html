@@ -6,22 +6,16 @@
 <title>Recepcija – gost bez tople vode</title>
 <style>
 :root{
-  --bg:#f3f5f9; --card:#ffffff; --ink:#1b2433; --muted:#566175; --line:#d8dfea;
-  --accent:#1f5f8b; --accent-ink:#ffffff; --guest:#e9edf4; --me:#d9eefa;
-  --ok:#17693f; --ok-bg:#e1f4e8; --bad:#a8231b; --bad-bg:#fcebe9;
-}
-@media (prefers-color-scheme: dark){
-  :root{
-    --bg:#0e131b; --card:#161d28; --ink:#e8edf5; --muted:#a0abbd; --line:#2a3546;
-    --accent:#5ab0e6; --accent-ink:#06121c; --guest:#212b3a; --me:#173a52;
-    --ok:#6fdca1; --ok-bg:#12301f; --bad:#ff9a90; --bad-bg:#3a1916;
-  }
+  color-scheme: light;
+  --bg:#f7fafc; --card:#ffffff; --ink:#223040; --muted:#5d6c7f; --line:#e1e8ef;
+  --accent:#25758f; --accent-ink:#ffffff; --guest:#eff4f8; --me:#e3f5f1;
+  --ok:#1d7a4c; --ok-bg:#e8f7ee; --bad:#b42318; --bad-bg:#fff0ee;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
 body{
-  margin:0; background:var(--bg); color:var(--ink);
+  margin:0; background:linear-gradient(#eef7fb, var(--bg) 260px) no-repeat, var(--bg); color:var(--ink);
   font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
 }
 #app{max-width:760px; margin:0 auto; padding:0 1rem 3rem}
@@ -29,7 +23,7 @@ header.top{padding:1.4rem 0 .4rem}
 header.top h1{margin:0; font-size:1.55rem; line-height:1.25}
 header.top p{margin:.3rem 0 0; color:var(--muted)}
 
-.card{background:var(--card); border:1px solid var(--line); border-radius:1rem; padding:1.2rem 1.3rem; margin-top:1rem}
+.card{background:var(--card); border:1px solid var(--line); border-radius:1rem; padding:1.2rem 1.3rem; margin-top:1rem; box-shadow:0 1px 3px rgba(34,48,64,.05)}
 .card h2{margin:0 0 .5rem; font-size:1.1rem}
 .card ol{margin:.4rem 0 1rem; padding-left:1.3rem}
 .card li{margin:.25rem 0}
@@ -55,13 +49,13 @@ button.primary:focus-visible{outline:3px solid var(--accent); outline-offset:3px
 #chat{padding-top:.4rem}
 .scene{
   margin:1rem 0; padding:.7rem 1rem; text-align:center; font-size:.92rem;
-  color:var(--muted); background:var(--card); border:1px dashed var(--line); border-radius:.8rem;
+  color:var(--muted); background:var(--card); border:1px dashed #cfdbe6; border-radius:.8rem;
 }
 .msg{display:flex; gap:.6rem; margin:.9rem 0; align-items:flex-end; animation:pop .25s ease-out}
 .msg.me{flex-direction:row-reverse}
 .avatar{
   flex:none; width:2.2rem; height:2.2rem; border-radius:50%; display:grid; place-items:center;
-  font-weight:700; font-size:.85rem; background:var(--line); color:var(--ink);
+  font-weight:700; font-size:.85rem; background:#dde6ee; color:var(--ink);
 }
 .msg.me .avatar{background:var(--accent); color:var(--accent-ink)}
 .col{max-width:min(86%,36rem)}
@@ -72,14 +66,14 @@ button.primary:focus-visible{outline:3px solid var(--accent); outline-offset:3px
 .me .bubble{background:var(--me); border-bottom-right-radius:.3rem}
 .tags{margin-top:.4rem; display:flex; flex-wrap:wrap; gap:.3rem; align-items:center; justify-content:flex-end}
 .tag-label{font-size:.78rem; color:var(--ok); font-weight:600}
-.pill{font-size:.78rem; padding:.1rem .55rem; border-radius:1rem; background:var(--ok-bg); color:var(--ok); border:1px solid var(--ok)}
+.pill{font-size:.78rem; padding:.1rem .55rem; border-radius:1rem; background:var(--ok-bg); color:var(--ok); border:1px solid #9fd5b6}
 .typing{display:inline-flex; gap:.25rem; padding:.2rem 0}
 .typing span{width:.5rem; height:.5rem; border-radius:50%; background:var(--muted); animation:blink 1s infinite}
 .typing span:nth-child(2){animation-delay:.15s}
 .typing span:nth-child(3){animation-delay:.3s}
 
 /* choices */
-#choices{margin-top:1.2rem; padding:1rem 1rem 1.1rem; border:1px solid var(--line); border-radius:1rem; background:var(--card)}
+#choices{margin-top:1.2rem; padding:1rem 1rem 1.1rem; border:1px solid var(--line); border-radius:1rem; background:var(--card); box-shadow:0 1px 3px rgba(34,48,64,.05)}
 #choices h2{margin:0 0 .2rem; font-size:1rem}
 #choices h2:focus{outline:none}
 #choices .sub{margin:0 0 .4rem; font-size:.88rem; color:var(--muted)}
@@ -88,21 +82,22 @@ button.primary:focus-visible{outline:3px solid var(--accent); outline-offset:3px
   border:2px solid var(--line); border-radius:.8rem; background:transparent; color:inherit;
   font:inherit; line-height:1.45; cursor:pointer;
 }
-.choice:hover{border-color:var(--accent)}
+.choice:hover{border-color:var(--accent); background:#f4fafc}
 .choice:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
 .letter{
   flex:none; width:1.7rem; height:1.7rem; border-radius:50%; display:grid; place-items:center;
-  font-size:.82rem; font-weight:700; background:var(--line); color:var(--ink); margin-top:.05rem;
+  font-size:.82rem; font-weight:700; background:#e3ebf2; color:var(--ink); margin-top:.05rem;
 }
 .txt{display:block; flex:1}
 .why{display:block; margin-top:.5rem; font-size:.9rem; color:var(--bad); font-weight:500}
-.choice.wrong{border-color:var(--bad); background:var(--bad-bg); cursor:default; animation:shake .3s}
-.choice.wrong:hover{border-color:var(--bad)}
-.choice.wrong .letter{background:var(--bad); color:var(--card)}
-.choice.right{border-color:var(--ok); background:var(--ok-bg); cursor:default}
-.choice.right .letter{background:var(--ok); color:var(--card)}
+.choice.wrong{border-color:#e8a29b; background:var(--bad-bg); cursor:default; animation:shake .3s}
+.choice.wrong:hover{border-color:#e8a29b; background:var(--bad-bg)}
+.choice.wrong .letter{background:var(--bad); color:#fff}
+.choice.right{border-color:#7cc79b; background:var(--ok-bg); cursor:default}
+.choice.right:hover{border-color:#7cc79b; background:var(--ok-bg)}
+.choice.right .letter{background:var(--ok); color:#fff}
 .choice.locked{cursor:default; opacity:.55}
-.choice.locked:hover{border-color:var(--line)}
+.choice.locked:hover{border-color:var(--line); background:transparent}
 
 /* result */
 #result h2{margin:0 0 .3rem; font-size:1.3rem}
